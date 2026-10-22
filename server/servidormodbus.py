@@ -45,3 +45,24 @@ class ServidorMODBUS:
         finally:
             self._server.stop()
             print("Servidor MODBUS finalizado.")
+
+
+class CLP:
+    def __init__(self, bank: DataBank) -> None:
+        self._db: DataBank
+        self._addr: dict[str, int] = {
+            "MASTER ENABLE": 1,  # Coil, bool
+            "PUMP ENABLE": 2,  # Coil, bool
+            "HEATER ENABLE": 3,  # Coil, bool
+            "HEATER SETPOINT": 1,  # Holding, uint16 * 100
+            "PUMP SETPOINT": 2,  # Holding, uint16 * 100
+            "PUMP FLOW": 1,  # Input, uint16 * 100
+            "OUTPUT TEMP": 2,  # Input, uint16 * 100
+            "INPUT TEMP": 3,  # Input, uint16 * 100
+            "INPUT VOLTAGE": 4,  # Input, float32
+            "POWER": 6,  # Input, float32
+            "CAPACITY": 8,  # Input, float32
+        }
+
+    def loop(self):
+        pass

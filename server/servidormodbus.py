@@ -49,35 +49,35 @@ class ServidorMODBUS:
     """
 
     def __init__(self, host_ip, port):
-        """
-        Construtor
-        """
         self._db = DataBank()
         self._server = ModbusServer(
             host=host_ip, port=port, no_block=True, data_bank=self._db
         )
         self._clp = CLP(self._db)
 
+    def print_table_snapshot(self):
+        """Itera por todas as tabelas e exibe os valores atuais formatados."""
+        print("==================================================")
+        print("Tabela MODBUS")
+
+        for table_type, registers in MODBUS_TABLES.items():
+            print(f"\n--- {table_type.name} ---")
+            for name, cfg in registers.items():
+                val = self._clp.get_val(name)
+                if cfg.objType is float:
+                    display_val = f"{val:.2f}"
+                else:
+                    display_val = str(val)
+                print(f"  [{cfg.offset:>2}] {name:<16}: {display_val}")
+
     def run(self):
-        """
-        Execução do servidor Modbus
-        """
         try:
             self._server.start()
             print("Servidor MODBUS em execução")
             while True:
                 self._clp.loop()
-
-                coils = self._db.get_coils(0, 3)
-                holding_regs = self._db.get_holding_registers(0, 2)
-                input_regs = self._db.get_input_registers(0, 3)
-
-                print("======================")
-                print("Tabela MODBUS")
-                print(f"Coils (1..3): {coils}")
-                print(f"Holding Registers (40001..40002): {holding_regs}")
-                print(f"Input Registers (30001..30003): {input_regs}")
-                sleep(1)
+                self.print_table_snapshot()
+                sleep(0.3)
         except Exception as e:
             print("Erro: ", e)
         finally:
@@ -92,103 +92,113 @@ class CLP:
 
     def __init__(self, bank: DataBank) -> None:
         self._db = bank
-        self._addr = {
-            "MASTER ENABLE": 0,  # Coil, bool
-            "PUMP ENABLE": 1,  # Coil, bool
-            "HEATER ENABLE": 2,  # Coil, bool
-            "HEATER SETPOINT": 0,  # Holding, uint16 * 100
-            "PUMP SETPOINT": 1,  # Holding, uint16 * 100
-            "PUMP FLOW": 0,  # Input, uint16 * 100
-            "OUTPUT TEMP": 1,  # Input, uint16 * 100
-            "INPUT TEMP": 2,  # Input, uint16 * 100
-            "INPUT VOLTAGE": 3,  # Input, float32
-            "POWER": 5,  # Input, float32
-            "CAPACITY": 7,  # Input, float32
-        }
+
+        # Mapeamento reverso para busca rápida de configurações por nome
+        self._map: dict[str, tuple[ModbusType, ModbusConfig]] = {}
+        for table_type, regs in MODBUS_TABLES.items():
+            for name, cfg in regs.items():
+                self._map[name] = (table_type, cfg)
 
         self._curr_temp = 20.0  # Temp. ambiente (20°C)
         self._curr_flow = 0.0  # Fluxo atual da bomba (L/min)
         self._curr_capacity = 10.0  # Nível do reservatório (%)
         self._input_temp = 20.0  # Temp. de entrada constante (20°C)
 
-        # Configurar valores iniciais no DataBank
         self._init_defaults()
 
-    def _init_defaults(self):
-        """Inicializa valores padrões de setpoints e lecturas fixas."""
-        # Configurar Setpoint do Aquecedor (ex: 50.0 °C -> 5000 com multiplicador x100)
-        self._db.set_holding_registers(self._addr["HEATER_SETPOINT"], [5000])
-        # Configurar Setpoint da Bomba (ex: 30.0 L/min -> 3000 com multiplicador x100)
-        self._db.set_holding_registers(self._addr["PUMP_SETPOINT"], [3000])
-        # Temp de entrada (20.0 °C -> 2000)
-        self._db.set_input_registers(
-            self._addr["INPUT_TEMP"], [int(self._input_temp * 100)]
-        )
+    def get_val(self, name: str):
+        """Lê e decodifica um valor da tabela Modbus."""
+        table_type, cfg = self._map[name]
 
-    def _write_float32(self, address: int, value: float):
-        """Auxiliar para converter float32 em 2 registradores de 16-bit (Big-Endian)."""
-        raw_bytes = struct.pack(">f", value)
-        reg1, reg2 = struct.unpack(">HH", raw_bytes)
-        self._db.set_input_registers(address, [reg1, reg2])
+        if table_type == ModbusType.COIL:
+            res = self._db.get_coils(cfg.offset, cfg.size)
+            return res[0] if res else False
+
+        elif table_type == ModbusType.HOLDING_REGISTER:
+            res = self._db.get_holding_registers(cfg.offset, cfg.size)
+            return (res[0] / cfg.multiplier) if res else 0.0
+
+        elif table_type == ModbusType.INPUT_REGISTER:
+            res = self._db.get_input_registers(cfg.offset, cfg.size)
+            if not res:
+                return 0.0
+            if cfg.objType is float and cfg.size == 2:
+                raw_bytes = struct.pack(">HH", res[0], res[1])
+                return struct.unpack(">f", raw_bytes)[0]
+            return res[0] / cfg.multiplier
+
+        return None
+
+    def set_val(self, name: str, value):
+        """Codifica e escreve um valor na tabela Modbus."""
+        table_type, cfg = self._map[name]
+
+        if table_type == ModbusType.COIL:
+            self._db.set_coils(cfg.offset, [bool(value)])
+
+        elif table_type == ModbusType.HOLDING_REGISTER:
+            self._db.set_holding_registers(cfg.offset, [int(value * cfg.multiplier)])
+
+        elif table_type == ModbusType.INPUT_REGISTER:
+            if cfg.objType is float and cfg.size == 2:
+                raw_bytes = struct.pack(">f", float(value))
+                reg1, reg2 = struct.unpack(">HH", raw_bytes)
+                self._db.set_input_registers(cfg.offset, [reg1, reg2])
+            else:
+                self._db.set_input_registers(cfg.offset, [int(value * cfg.multiplier)])
+
+    def _init_defaults(self):
+        """Inicializa valores padrões do CLP."""
+        # self.set_val("MASTER ENABLE", True)
+        # self.set_val("PUMP ENABLE", True)
+        # self.set_val("HEATER ENABLE", True)
+        self.set_val("HEATER SETPOINT", 50.0)
+        self.set_val("PUMP SETPOINT", 30.0)
+        self.set_val("INPUT TEMP", self._input_temp)
 
     def loop(self):
-        """
-        Executado periodicamente para simular a física do sistema
-        """
-        # Lê as coils e verifica o que deve ser ativado/desativado.
-        coils = self._db.get_coils(0, 3) or [False, False, False]
-        master_en = coils[self._addr["MASTER_ENABLE"]]
-        pump_en = coils[self._addr["PUMP_ENABLE"]]
-        heater_en = coils[self._addr["HEATER_ENABLE"]]
+        """Executado periodicamente para simular a física do sistema."""
+        master_en = self.get_val("MASTER ENABLE")
+        pump_en = self.get_val("PUMP ENABLE")
+        heater_en = self.get_val("HEATER ENABLE")
 
-        # Lê setpoints
-        holdings = self._db.get_holding_registers(0, 2) or [0, 0]
-        heater_sp = holdings[self._addr["HEATER_SETPOINT"]] / 100.0
-        pump_sp = holdings[self._addr["PUMP_SETPOINT"]] / 100.0
+        heater_sp = self.get_val("HEATER SETPOINT")
+        pump_sp = self.get_val("PUMP SETPOINT")
 
-        # Tensão de alimentação (220V se ligado, 0V se desligado)
+        if heater_sp is None or pump_sp is None:
+            return
+
         input_voltage = (
-            random.randrange(int(0.93 * 220), int(1.1 * 220)) if master_en else 0.0
+            random.randrange(int(0.93 * 220), int(1.10 * 220)) if master_en else 0.0
         )
 
-        # Simula a dinâmica do sistema usando um controlador P
         if master_en:
             if heater_en:
                 error_temp = heater_sp - self._curr_temp
-                kp_temp = 0.15
-                self._curr_temp += kp_temp * error_temp
+                self._curr_temp += 0.15 * error_temp
             else:
-                # Decaimento natural para a temperatura ambiente (20°C)
                 self._curr_temp -= 0.1 * (self._curr_temp - self._input_temp)
 
             if pump_en:
                 error_flow = pump_sp - self._curr_flow
-                kp_flow = 0.3
-                self._curr_flow += kp_flow * error_flow
+                self._curr_flow += 0.3 * error_flow
             else:
-                self._curr_flow *= 0.5  # Parada da bomba
+                self._curr_flow *= 0.5
 
-            # A capacidade varia proporcionalmente ao fluxo da bomba
             self._curr_capacity = max(
                 0.0, min(100.0, self._curr_capacity + (self._curr_flow * 0.05) - 0.2)
             )
 
-            # Potência ativa simples baseada nos atuadores ligados (Watts)
             power = (2400.0 if heater_en else 0.0) + (
                 self._curr_flow * 20.0 if pump_en else 0.0
             )
         else:
-            # Equipamento Desligado (Master Enable Off)
             self._curr_temp -= 0.1 * (self._curr_temp - self._input_temp)
             self._curr_flow = 0.0
             power = 0.0
 
-        self._db.set_input_registers(
-            self._addr["PUMP_FLOW"], [int(self._curr_flow * 100)]
-        )
-        self._db.set_input_registers(
-            self._addr["OUTPUT_TEMP"], [int(self._curr_temp * 100)]
-        )
-        self._write_float32(self._addr["INPUT_VOLTAGE"], input_voltage)
-        self._write_float32(self._addr["POWER"], power)
-        self._write_float32(self._addr["CAPACITY"], self._curr_capacity)
+        self.set_val("PUMP FLOW", self._curr_flow)
+        self.set_val("OUTPUT TEMP", self._curr_temp)
+        self.set_val("INPUT VOLTAGE", input_voltage)
+        self.set_val("POWER", power)
+        self.set_val("CAPACITY", self._curr_capacity)

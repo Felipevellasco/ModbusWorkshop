@@ -1,2 +1,0 @@
-pymodbustcp==0.1.8
-pymodbus

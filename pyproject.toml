@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "modbusworkshop"
+description = "Um exemplo de aplicação utilizando Modbus."
+version = "0.0.1"
+readme = "README.md"
+dependencies = [
+    "pymodbustcp==0.1.8",
+    "pymodbus",
+]
+authors = [
+  {name = "Felipe Vellasco", email = "vellasco.felipe@estudante.ufjf.br"},
+]
+
+[project.scripts]
+run-server = "server.main:main"
+run-client = "client.main:main"
+
+[dependency-groups]
+dev = [
+    "ruff",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["client", "server"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false

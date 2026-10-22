@@ -1,7 +1,9 @@
-from pymodbus.client import ModbusTcpClient
 from time import sleep
 
-class ClienteMODBUS():
+from pymodbus.client import ModbusTcpClient
+
+
+class ClienteMODBUS:
     """
     Classe Cliente MODBUS usando pymodbus
     """
@@ -28,7 +30,7 @@ class ClienteMODBUS():
                     tipo = input("""Qual tipo de dado deseja ler? (1- Holding Register | 2- Coil | 3- Input Register | 4- Discrete Input): """)
                     addr = input("Digite o endereço da tabela MODBUS: ")
                     nvezes = input("Digite o número de vezes que deseja ler: ")
-                    for i in range(0, int(nvezes)):
+                    for i in range(int(nvezes)):
                         print(f"Leitura {i+1}: {self.lerDado(int(tipo), int(addr))}")
                         sleep(self._scan_time)
 

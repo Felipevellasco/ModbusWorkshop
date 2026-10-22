@@ -1,9 +1,10 @@
-from pyModbusTCP.server import DataBank, ModbusServer
 import random
 from time import sleep
 
+from pyModbusTCP.server import DataBank, ModbusServer
 
-class ServidorMODBUS():
+
+class ServidorMODBUS:
     """
     Classe Servidor Modbus
     """

@@ -50,7 +50,10 @@ class ClienteMODBUS:
 
                     _, cfg = self._map[nome]
                     raw_val = input(f"Digite o novo valor para {nome}: ")
-                    valor = cfg.objType(raw_val)
+                    if cfg.objType is bool:
+                        valor = raw_val.lower() in ("1", "true", "t", "sim", "s", "on")
+                    else:
+                        valor = cfg.objType(raw_val)
 
                     ok = self.escrever_por_nome(nome, valor)
                     print(

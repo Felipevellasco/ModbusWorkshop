@@ -1,7 +1,46 @@
-import random, struct
+from dataclasses import dataclass
+from enum import IntEnum
+import random
+import struct
 from time import sleep
 
-from pyModbusTCP.server import DataHandler, ModbusServer, DataBank
+from pyModbusTCP.server import DataBank, ModbusServer
+
+
+class ModbusType(IntEnum):
+    COIL = 0
+    DISCRETE_INPUT = 1
+    INPUT_REGISTER = 2
+    HOLDING_REGISTER = 3
+
+
+@dataclass
+class ModbusConfig:
+    offset: int
+    size: int = 1
+    objType: type = int
+    multiplier: float = 1.0
+
+
+MODBUS_TABLES = {
+    ModbusType.COIL: {
+        "MASTER ENABLE": ModbusConfig(offset=0, objType=bool),
+        "PUMP ENABLE": ModbusConfig(offset=1, objType=bool),
+        "HEATER ENABLE": ModbusConfig(offset=2, objType=bool),
+    },
+    ModbusType.HOLDING_REGISTER: {
+        "HEATER SETPOINT": ModbusConfig(offset=0, multiplier=100.0),
+        "PUMP SETPOINT": ModbusConfig(offset=1, multiplier=100.0),
+    },
+    ModbusType.INPUT_REGISTER: {
+        "PUMP FLOW": ModbusConfig(offset=0, multiplier=100.0),
+        "OUTPUT TEMP": ModbusConfig(offset=1, multiplier=100.0),
+        "INPUT TEMP": ModbusConfig(offset=2, multiplier=100.0),
+        "INPUT VOLTAGE": ModbusConfig(offset=3, size=2, objType=float),
+        "POWER": ModbusConfig(offset=5, size=2, objType=float),
+        "CAPACITY": ModbusConfig(offset=7, size=2, objType=float),
+    },
+}
 
 
 class ServidorMODBUS:

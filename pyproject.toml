@@ -8,7 +8,7 @@ description = "Um exemplo de aplicação utilizando Modbus."
 version = "0.0.1"
 readme = "README.md"
 dependencies = [
-    "pymodbustcp==0.1.8",
+    "pymodbustcp>=0.3.0",
     "pymodbus",
 ]
 authors = [

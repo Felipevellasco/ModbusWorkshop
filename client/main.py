@@ -1,8 +1,8 @@
-from clientemodbus import ClienteMODBUS
+from client.clientemodbus import ClienteMODBUS
 
 
 def main():
-    c = ClienteMODBUS("localhost", 502)
+    c = ClienteMODBUS("localhost", 51020)
     c.atendimento()
 
 

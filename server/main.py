@@ -1,8 +1,8 @@
-from servidormodbus import ServidorMODBUS
+from server.servidormodbus import ServidorMODBUS
 
 
 def main():
-    s = ServidorMODBUS("localhost", 502)
+    s = ServidorMODBUS("localhost", 51020)
     s.run()
 
 

@@ -10,6 +10,7 @@ readme = "README.md"
 dependencies = [
     "pymodbustcp>=0.3.0",
     "pymodbus",
+    "kivymd",
 ]
 authors = [
   {name = "Felipe Vellasco", email = "vellasco.felipe@estudante.ufjf.br"},
@@ -18,6 +19,7 @@ authors = [
 [project.scripts]
 run-server = "server.main:main"
 run-client = "client.main:main"
+gui = "client.main:gui"
 
 [dependency-groups]
 dev = [

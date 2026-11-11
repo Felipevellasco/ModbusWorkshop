@@ -1,0 +1,28 @@
+#:kivy 2.3.0
+
+<MainScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+        md_bg_color: app.theme_cls.backgroundColor
+
+        MDTopAppBar:
+            type: "small"
+            MDTopAppBarTitle:
+                text: "Modbus Dashboard"
+                pos_hint: {"center_x": .5}
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: "24dp"
+            spacing: "16dp"
+
+            MDLabel:
+                text: "Welcome to KivyMD"
+                halign: "center"
+                font_style: "Headline"
+                role: "medium"
+
+            MDFabButton:
+                icon: "plus"
+                pos_hint: {"center_x": .5}
+                on_release: root.handle_button_click()

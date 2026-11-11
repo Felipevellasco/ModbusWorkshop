@@ -17,8 +17,16 @@ if platform == "linux":
 
 
 class MainScreen(MDScreen):
+    status_text: str = "potato!"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def handle_button_click(self):
         print("Botão pressionado")
+
+    def is_connected(self):
+        return True
 
 
 class RootScreenManager(MDScreenManager):

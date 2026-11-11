@@ -5,11 +5,58 @@
         orientation: "vertical"
         md_bg_color: app.theme_cls.backgroundColor
 
-        MDTopAppBar:
-            type: "small"
-            MDTopAppBarTitle:
-                text: "Modbus Dashboard"
-                pos_hint: {"center_x": .5}
+        MDBoxLayout:
+            orientation: "horizontal"
+            adaptive_height: True
+            padding: ["16dp", "12dp", "16dp", "12dp"]
+            spacing: "12dp"
+            md_bg_color: app.theme_cls.surfaceContainerColor
+
+            MDLabel:
+                text: "Modbus Workshop"
+                font_style: "Title"
+                role: "large"
+                adaptive_width: True
+                pos_hint: {"center_y": .5}
+
+            Widget:
+
+            MDLabel:
+                text: "Modbus TCP:"
+                font_style: "Title"
+                role: "medium"
+                adaptive_width: True
+                pos_hint: {"center_y": .5}
+
+            MDTextField:
+                id: server_ip
+                text: "192.168.1.50"
+                hint_text: "Server IP"
+                mode: "outlined"
+                size_hint_x: None
+                width: "160dp"
+                pos_hint: {"center_y": .5}
+
+            MDTextField:
+                id: server_port
+                text: "502"
+                hint_text: "Port"
+                mode: "outlined"
+                size_hint_x: None
+                width: "80dp"
+                pos_hint: {"center_y": .5}
+
+            MDButton:
+                style: "filled"
+                pos_hint: {"center_y": .5}
+                on_release: root.toggle_connection(server_ip.text, server_port.text)
+                md_bg_color: [0.2, 0.7, 0.3, 1] if root.is_connected else app.theme_cls.primaryColor
+
+                MDButtonIcon:
+                    icon: "check-circle-outline" if root.is_connected else "connection"
+
+                MDButtonText:
+                    text: "Connected" if root.is_connected else "Connect"
 
         MDBoxLayout:
             orientation: "vertical"

@@ -13,7 +13,7 @@
             md_bg_color: app.theme_cls.surfaceContainerColor
 
             MDLabel:
-                text: "Modbus Workshop"
+                text: "Modbus HMI"
                 font_style: "Title"
                 role: "large"
                 adaptive_width: True
@@ -21,26 +21,19 @@
 
             Widget:
 
-            MDLabel:
-                text: "Modbus TCP:"
-                font_style: "Title"
-                role: "medium"
-                adaptive_width: True
-                pos_hint: {"center_y": .5}
-
             MDTextField:
                 id: server_ip
-                text: "192.168.1.50"
-                hint_text: "Server IP"
+                text: "127.0.0.1"
+                hint_text: "IP Servidor"
                 mode: "outlined"
                 size_hint_x: None
-                width: "160dp"
+                width: "140dp"
                 pos_hint: {"center_y": .5}
 
             MDTextField:
                 id: server_port
-                text: "502"
-                hint_text: "Port"
+                text: "51020"
+                hint_text: "Porta"
                 mode: "outlined"
                 size_hint_x: None
                 width: "80dp"
@@ -56,20 +49,99 @@
                     icon: "check-circle-outline" if root.is_connected else "connection"
 
                 MDButtonText:
-                    text: "Connected" if root.is_connected else "Connect"
+                    text: "Conectado" if root.is_connected else "Conectar"
 
         MDBoxLayout:
             orientation: "vertical"
             padding: "24dp"
             spacing: "16dp"
 
-            MDLabel:
-                text: "Welcome to KivyMD"
-                halign: "center"
-                font_style: "Headline"
-                role: "medium"
+            MDBoxLayout:
+                orientation: "horizontal"
+                adaptive_height: True
+                spacing: "12dp"
 
-            MDFabButton:
-                icon: "plus"
-                pos_hint: {"center_x": .5}
-                on_release: root.handle_button_click()
+                MDTextField:
+                    id: modbus_type
+                    text: "Holding Register"
+                    hint_text: "Tipo (Coil / Holding Register / Float)"
+                    mode: "outlined"
+                    size_hint_x: 0.6
+
+                MDTextField:
+                    id: reg_address
+                    text: "0"
+                    hint_text: "Endereço Modbus"
+                    mode: "outlined"
+                    size_hint_x: 0.4
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                adaptive_height: True
+                spacing: "12dp"
+
+                MDCheckbox:
+                    id: cyclic_check
+                    active: False
+                    size_hint: None, None
+                    size: "48dp", "48dp"
+                    pos_hint: {"center_y": .5}
+                    on_active: root.on_cyclic_toggle(self.active)
+
+                MDLabel:
+                    text: "Leitura Recorrente"
+                    adaptive_width: True
+                    pos_hint: {"center_y": .5}
+
+                MDTextField:
+                    id: scan_interval
+                    text: "1.0"
+                    hint_text: "Intervalo (s)"
+                    mode: "outlined"
+                    size_hint_x: None
+                    width: "100dp"
+                    pos_hint: {"center_y": .5}
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                adaptive_height: True
+                spacing: "12dp"
+
+                MDButton:
+                    style: "filled"
+                    on_release: root.executar_leitura()
+                    pos_hint: {"center_y": .5}
+                    MDButtonText:
+                        text: "Ler Dados"
+
+                MDLabel:
+                    text: "Valor Lido: " + root.read_result
+                    font_style: "Title"
+                    role: "medium"
+                    pos_hint: {"center_y": .5}
+
+            Widget:
+                size_hint_y: None
+                height: "2dp"
+                md_bg_color: app.theme_cls.surfaceContainerHighestColor
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                adaptive_height: True
+                spacing: "12dp"
+
+                MDTextField:
+                    id: write_value
+                    hint_text: "Valor para Escrever"
+                    mode: "outlined"
+                    size_hint_x: 0.6
+                    pos_hint: {"center_y": .5}
+
+                MDButton:
+                    style: "filled"
+                    on_release: root.executar_escrita(write_value.text)
+                    pos_hint: {"center_y": .5}
+                    MDButtonText:
+                        text: "Escrever"
+
+            Widget:
